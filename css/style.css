@@ -293,6 +293,14 @@ li.selected {
     flex-grow: 1;
 }
 
+/* styles for the counter which is displaying the number of characters of the input */
+#counter {
+    color: gray;
+    font-size: 12px;
+    margin-left: 5px;
+    margin-right: 5px;
+}
+
 
 /* MESSAGES */
 

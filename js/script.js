@@ -1,6 +1,23 @@
 /* start the external action and say hello */
 console.log("App is alive");
 
+
+// #11 the ready function initialize the chatter app
+$(document).ready(function(){
+    listChannels(compareNew);
+    loadEmojis();
+    console.log("App is initialized");
+    // it is possible to send a message with the enter button
+    enterButton();
+    
+    countCharsOfTheMessage();
+
+    // every ten seconds it logs "Updating message elements..."
+    setInterval(function(){
+        console.log("Updating message elements...")
+    }, 10000);
+});
+
 /** #10 global #array of channels #arr*/
 var channels = [
     yummy,
@@ -27,7 +44,7 @@ var currentLocation = {
  * Switch channels name in the right app bar
  * @param channelObject
  */
-function switchChannel(channelObject) {
+function switchChannel(channelObject, channelElement) {
     // Log the channel switch
     console.log("Tuning in to channel", channelObject);
 
@@ -49,14 +66,28 @@ function switchChannel(channelObject) {
     $('#channel-star i').addClass(channelObject.starred ? 'fas' : 'far');
 
 
-    /* highlight the selected #channel.
+    /* #11 highlight the selected #channel.
        This is inefficient (jQuery has to search all channel list items), but we'll change it later on */
     $('#channels li').removeClass('selected');
-    $('#channels li:contains(' + channelObject.name + ')').addClass('selected');
+    $(channelElement).addClass('selected');
 
     /* store selected channel in global variable */
     currentChannel = channelObject;
+
+    /* call the function showMessages */
+    showMessages();
 }
+
+/**
+ * #11 function to show the saved messages of the current channel 
+ */
+function showMessages() {
+    $("#messages").empty();
+    $.each(currentChannel.messages, function(){
+       $("#messages").append(createMessageElement(this));
+    });
+}
+
 
 /* liking a channel on #click */
 function star() {
@@ -126,6 +157,37 @@ function Message(text) {
     this.text = text;
     // own message
     this.own = true;
+
+    this.element; 
+}
+
+/**
+ * #11 This function allows you to send a message when you hit the enter button
+ */
+function enterButton() {
+    document.getElementById('message').addEventListener("keyup", function(){
+        if(event.keyCode === 13){
+            sendMessage();
+        }
+    });
+}
+
+/**
+ * #11 this function counts and displays the number of letters whenever a user is typing
+ * more than 140 letters aren't allowed
+ */
+function countCharsOfTheMessage() {
+    var letters;
+ 
+    $('#message').on('keyup', function(){
+         letters = this.value.length;
+         $('#counter').text(letters + '/140');
+    })
+
+    if(letters === 140){
+        alert("Sorry, only 140 letters are allowed.");
+        $('#message').addClass(disabled="disabled");
+    }
 }
 
 function sendMessage() {
@@ -169,18 +231,18 @@ function createMessageElement(messageObject) {
     var expiresIn = Math.round((messageObject.expiresOn - Date.now()) / 1000 / 60);
 
     // Creating a message-element
-    return '<div class="message'+
-        //this dynamically adds #own to the #message, based on the
-        //ternary operator. We need () in order not to disrupt the return.
-        (messageObject.own ? ' own' : '') +
-        '">' +
-        '<h3><a href="http://w3w.co/' + messageObject.createdBy + '" target="_blank">'+
-        '<strong>' + messageObject.createdBy + '</strong></a>' +
-        messageObject.createdOn.toLocaleString() +
-        '<em>' + expiresIn + ' min. left</em></h3>' +
-        '<p>' + messageObject.text + '</p>' +
-        '<button class="accent">+5 min.</button>' +
-        '</div>';
+    var newMesssageElement = $('<div>').addClass('message' +  (messageObject.own ? ' own' : ''));
+
+    $('<h3>').append('<a href="http://w3w.co/' + messageObject.createdBy + '" target="_blank">'+
+    '<strong>' + messageObject.createdBy + '</strong></a>' +
+    messageObject.createdOn.toLocaleString() +
+    '<em>' + expiresIn + ' min. left</em>').appendTo(newMesssageElement);
+
+    $('<p>').text(messageObject.text).appendTo(newMesssageElement);
+
+    $('<button>').addClass('accent').text('+5min.').click(function(){alert("extension of the message's lifetime")}).appendTo(newMesssageElement);
+
+    return newMesssageElement;
 }
 
 /* #10 Three #compare functions to #sort channels */
@@ -215,9 +277,10 @@ function compareFavorites(channelA, channelB) {
 }
 
 function listChannels(criterion) {
+
     // #10 #sorting: #sort channels#array by the criterion #parameter
     channels.sort(criterion);
-
+    
     // #10 #sorting #duplicate: empty list
     $('#channels ul').empty();
 
@@ -225,6 +288,9 @@ function listChannels(criterion) {
     for (i = 0; i < channels.length; i++) {
         $('#channels ul').append(createChannelElement(channels[i]));
     };
+    
+    // #11 after sorting the currentChannel is still highlighted 
+    $('#channels li:contains(' + currentChannel.name + ')').addClass('selected');
 }
 
 /**
@@ -308,8 +374,11 @@ function createChannelElement(channelObject) {
      </li>
      */
 
-    // create a channel
+    // create a channel and #11 set a clicklistener which calls switchChannel 
     var channel = $('<li>').text(channelObject.name);
+    channel.click(function(){
+        switchChannel(channelObject, this);
+    });
 
     // create and append channel meta
     var meta = $('<span>').addClass('channel-meta').appendTo(channel);
